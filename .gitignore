@@ -1,0 +1,15 @@
+/target
+/.idea
+*.iml
+/classes
+/checkouts
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+my-*.edn
+/.lein-*
+/.nrepl-port
+.hgignore
+.hg/
+/.classpath
