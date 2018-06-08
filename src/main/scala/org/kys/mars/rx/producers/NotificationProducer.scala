@@ -11,6 +11,13 @@ import org.kys.mars.models.Json.Notification
 
 import scala.concurrent.duration._
 
+
+/** TBD
+  *
+  * @param rate
+  * @param characterId
+  * @param token
+  */
 class NotificationProducer(override val rate: FiniteDuration)(characterId: Long, override val token: String)
   extends Observable[Notification] with EveApiProducer with EsiProducer with LazyLogging {
   private var eTag: String = ""

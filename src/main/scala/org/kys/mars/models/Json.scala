@@ -3,6 +3,9 @@ package org.kys.mars.models
 import io.circe.generic.auto._
 import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec}
 
+/** All models used to render from/to JSON are listed here.
+  * All models expect fields in JSON to be named in snake_case.
+  */
 object Json {
   implicit val customConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 

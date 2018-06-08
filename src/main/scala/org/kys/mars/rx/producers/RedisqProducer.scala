@@ -14,6 +14,12 @@ import io.circe.generic.auto._
 import monix.reactive.subjects.ReplaySubject
 import org.kys.mars.models.Json.{PackageBis, R00tJsonObject}
 
+/** RedisQ producer class (Reactive Streams pattern).
+  * This class can be used to produce a stream of [[PackageBis]]
+  * that can be later transformed and processed by a consumer.
+  * @param rate   How often the producer should poll zKb API to get new packages
+  * @param key    (Optional) A key used to indentify ourselves to zKb.
+  */
 class RedisqProducer(override val rate: FiniteDuration)(key: String = "kys-km-producer1")
   extends Observable[PackageBis] with EveApiProducer with LazyLogging {
   private var eTag: String = ""

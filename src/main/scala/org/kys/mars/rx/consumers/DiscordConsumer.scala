@@ -18,6 +18,10 @@ import net.katsstuff.ackcord.{ClientSettings, DiscordClient}
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
+/** This is main Discord consumer class (Reactive Streams pattern).
+  * This class can be used to process stream of [[CreateMessage]]
+  * @param client   Underlying discord client (instance of [[DiscordClient]]) used to back the consumer
+  */
 class DiscordConsumer(client: Future[DiscordClient[Id]])
   extends Consumer[Seq[CreateMessage[NotUsed]], Unit] with LazyLogging {
   override def createSubscriber(cb: Callback[Unit], s: Scheduler):
