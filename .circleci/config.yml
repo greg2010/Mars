@@ -1,0 +1,68 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/mars
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - mars-{{ checksum "build.sbt" }}
+            - mars
+      - run: sbt compile
+      - run: sbt test
+      - store_test_results:
+          path: test-results
+      - run: sbt assembly
+      - persist_to_workspace:
+          root: target
+          paths:
+            - scala-2.12/mars.jar
+      - store_artifacts:
+          path: target/scala-2.12/mars.jar
+          destination: jar
+      - save_cache:
+          key: mars-{{ checksum "build.sbt" }}
+          paths:
+            - target/resolution-cache
+            - target/streams
+            - project/target/resolution-cache
+            - project/target/streams
+            - ~/.sbt
+            - ~/.ivy2/cache
+            - ~/.m2
+      - save_cache:
+          key: mars
+          paths:
+            - ~/.sbt
+            - ~/.ivy2/cache
+            - ~/.m2
+  deploy:
+    working_directory: ~/mars
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - attach_workspace:
+          at: target
+      - run: docker build -t greg2010/mars .
+      - run: docker tag greg2010/mars greg2010/mars:${CIRCLE_BRANCH}_${CIRCLE_SHA1:0:7}
+      - run: docker tag greg2010/mars greg2010/mars:${CIRCLE_BRANCH}_latest
+      - run: docker tag greg2010/mars greg2010/mars:latest
+      - run: docker login --username ${DOCKER_USER} --password ${DOCKER_PASSWORD}
+      - run: docker push greg2010/ranker
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore:
+                - gh-pages
+      - deploy:
+          requires:
+            - build

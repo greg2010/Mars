@@ -1,0 +1,9 @@
+version: '2.2'
+services:
+  mars:
+    image: greg2010/mars:master_latest
+    volumes:
+      - ./YOUR_CONFIG_FILE:/kys/mars.conf
+    mem_limit: 256m
+    environment:
+      - MARS_DISCORD_TOKEN=YOURTOKEN

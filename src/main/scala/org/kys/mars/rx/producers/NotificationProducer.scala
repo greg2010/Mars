@@ -1,13 +1,13 @@
-package org.kys.mars.producers
+package org.kys.mars.rx.producers
 
 import com.softwaremill.sttp._
 import com.typesafe.scalalogging.LazyLogging
 import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
-import org.kys.mars.models.NotificationSchema.Notification
 import io.circe.parser._
 import io.circe.generic.auto._
+import org.kys.mars.models.Json.Notification
 
 import scala.concurrent.duration._
 

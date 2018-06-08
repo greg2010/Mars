@@ -11,5 +11,7 @@ my-*.edn
 /.lein-*
 /.nrepl-port
 .hgignore
+/project/project
+/project/target
 .hg/
 /.classpath

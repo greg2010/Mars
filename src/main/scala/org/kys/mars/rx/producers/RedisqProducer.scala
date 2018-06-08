@@ -1,4 +1,4 @@
-package org.kys.mars.producers
+package org.kys.mars.rx.producers
 
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.circe._
@@ -7,16 +7,15 @@ import io.circe.DecodingFailure
 import monix.execution.Cancelable
 import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
-import org.kys.mars.models.RedisQSchema._
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import io.circe.parser._
 import io.circe.generic.auto._
 import monix.reactive.subjects.ReplaySubject
+import org.kys.mars.models.Json.{PackageBis, R00tJsonObject}
 
 class RedisqProducer(override val rate: FiniteDuration)(key: String = "kys-km-producer1")
   extends Observable[PackageBis] with EveApiProducer with LazyLogging {
-  new ReplaySubject[]()
   private var eTag: String = ""
 
   val r = sttp.get(uri"http://redisq.zkillboard.com/listen.php?queueID=$key&ttw=1")

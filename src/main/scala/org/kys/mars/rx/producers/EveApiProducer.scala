@@ -1,4 +1,4 @@
-package org.kys.mars.producers
+package org.kys.mars.rx.producers
 
 import com.softwaremill.sttp.{HttpURLConnectionBackend, Id, SttpBackend}
 import monix.execution.Cancelable
