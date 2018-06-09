@@ -49,7 +49,10 @@ case class Destination(`type`: DestinationType,
     * @return             True if package is relevant to the destination, false otherwise
     */
   def isRelevant(kmPackage: PackageBis): Boolean = {
-    val relevant = all || kmPackage.killmail.attackers.map(isRelevantCharacterEntity).reduce(_ || _)
+    val relevant =
+      all ||
+        kmPackage.killmail.attackers.map(isRelevantCharacterEntity).reduce(_ || _) ||
+        isRelevantCharacterEntity(kmPackage.killmail.victim)
     logger.debug(s"Determined killmail ${kmPackage.killID} relevant=$relevant destination=$name")
     relevant
   }
