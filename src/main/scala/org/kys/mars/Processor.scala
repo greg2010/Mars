@@ -12,10 +12,13 @@ import org.kys.mars.rx.producers.RedisqProducer
 import org.kys.mars.util.{ArgUtils, DiscordUtils}
 
 import scala.concurrent.Await
+import scala.util.Try
 
 object Processor extends LazyLogging {
   def main(args: Array[String]): Unit = {
-    val (client, loginFuture) = DiscordUtils.initClient(marsConfig.getString("discord.token"))
+    val (client, loginFuture) = DiscordUtils.initClient(
+      marsConfig.getString("discord.token"),
+      Try(marsConfig.getString("discord.status")).toOption)
     lazy val argsConf = new ArgUtils(args)
     lazy val redisqProducer = new RedisqProducer(50.millis)()
     lazy val discordConsumer = new DiscordConsumer(client)
