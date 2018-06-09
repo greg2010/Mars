@@ -42,7 +42,7 @@ case class Destination(`type`: DestinationType,
     * @param kmPackage    Package to be processed
     * @return             True if package is friendly, false otherwise
     */
-  def isFriendly(kmPackage: PackageBis): Boolean = !all || isRelevantCharacterEntity(kmPackage.killmail.victim)
+  def isFriendly(kmPackage: PackageBis): Boolean = !(all && isRelevantCharacterEntity(kmPackage.killmail.victim))
 
   /** Determines if [[PackageBis]] is relevant to the destination
     * @param kmPackage    Package to be processed
