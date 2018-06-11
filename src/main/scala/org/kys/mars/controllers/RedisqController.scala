@@ -154,6 +154,7 @@ class RedisqController(redisqProducer: RedisqProducer,
       val characterField = victim.characterId.flatMap(getNameById).map(generateField("Character", _))
       val corporationField = victim.corporationId.flatMap(getNameById).map(generateField("Corporation", _))
       val allianceField = victim.allianceId.flatMap(getNameById).map(generateField("Alliance", _))
+      val shipField = victim.shipTypeId.flatMap(getNameById).map(generateField("Ship", _))
       val solarSystemField = getNameById(p.killmail.solarSystemId).map(generateField("Location", _))
       val totalValueField = generateField("Total Value", p.zkb.totalValue.getOrElse(0D).formatted("%,.2f ISK"))
 
@@ -169,7 +170,14 @@ class RedisqController(redisqProducer: RedisqProducer,
         color = Some(color),
         footer = Some(generateFooter),
         thumbnail = generateVictimImage.map(OutgoingEmbedThumbnail),
-        fields = Seq(characterField, corporationField, allianceField, solarSystemField, Some(totalValueField)).flatten
+        fields = Seq(
+          characterField,
+          corporationField,
+          allianceField,
+          shipField,
+          solarSystemField,
+          Some(totalValueField)
+        ).flatten
       )
     }
 
