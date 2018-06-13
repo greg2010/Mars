@@ -1,11 +1,19 @@
-destinations = [
+killmail-destinations = [
   {
-    type = killmail
     character-ids = [1,2],
     corporation-ids = [3,4],
     alliance-ids = [5,6]
     discord-channel-ids = [7,8]
     all = false
     name = "spam"
+  }
+]
+
+discord-bot-token = "token"
+
+notification-destinations = [
+  {
+    esi-refresh-token = ""
+    discord-channel-ids = [7,8]
   }
 ]

@@ -44,12 +44,12 @@ class RedisqProducer(override val rate: FiniteDuration)(key: String = "kys-km-pr
               case Left(err) =>
                 logger.error(s"Failed to parse response from RedisQ, " +
                   s"error=${err.message} " +
-                  s"rawMessage=$succResp")
+                  s"rawMessage=$succResp", err)
 
               case Right(Left(err)) =>
-                logger.info(s"Failed to decode response from RedisQ, " +
+                logger.error(s"Failed to decode response from RedisQ, " +
                   s"error=${err.message} " +
-                  s"rawMessage=$succResp")
+                  s"rawMessage=$succResp", err)
             }
           case Left(err) =>
             rawResp.code match {

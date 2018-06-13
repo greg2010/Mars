@@ -10,7 +10,7 @@ jobs:
           keys:
             - mars-{{ checksum "build.sbt" }}
             - mars
-      - run: sbt compile
+      - run: JAVA_OPTS=-Xss256m sbt compile
       - run: sbt test
       - store_test_results:
           path: test-results

@@ -1,21 +1,31 @@
 package org.kys.mars.models
 
+import java.time.Instant
+
+import io.circe
 import io.circe.generic.auto._
 import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec}
+import monix.eval.Task
+import org.kys.mars.models.notifications.ParsedNotificationLike
+import org.kys.mars.util.NotificationParsers
 
 /** All models used to render from/to JSON are listed here.
   * All models expect fields in JSON to be named in snake_case.
   */
 object Json {
+  import io.circe.java8.time._
   implicit val customConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec case class EsiName(category: String, id: Long, name: String)
 
   @ConfiguredJsonCodec case class Notification(notificationId: Long,
                                                senderId: Long,
-                                               senderType: String,
+                                               senderType: EsiNotificationSenderType,
+                                               timestamp: Instant,
                                                text: String,
-                                               `type`: String)
+                                               `type`: EsiNotificationType) {
+    lazy val embed: Option[Either[circe.Error, ParsedNotificationLike]] = NotificationParsers.parse(this)
+  }
 
 
   trait CharacterEntity {
@@ -54,7 +64,7 @@ object Json {
                                            solarSystemId: Long,
                                            victim: Victim)
 
-  case class Zkb(locationID: Long,
+  @ConfiguredJsonCodec case class Zkb(locationID: Long,
                  hash: String,
                  fittedValue: Double,
                  totalValue: Option[Double],
@@ -64,9 +74,9 @@ object Json {
                  awox: Boolean,
                  href: String)
 
-  case class R00tJsonObject(`package`: Option[PackageBis])
+  @ConfiguredJsonCodec case class R00tJsonObject(`package`: Option[PackageBis])
 
-  case class PackageBis(killID: Long, killmail: Killmail, zkb: Zkb) {
+  @ConfiguredJsonCodec case class PackageBis(killID: Long, killmail: Killmail, zkb: Zkb) {
     def getIds: List[Long] = {
       val victimIds: List[Option[Long]] = List(
         killmail.victim.characterId,

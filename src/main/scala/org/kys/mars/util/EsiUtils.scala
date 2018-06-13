@@ -6,8 +6,11 @@ import com.softwaremill.sttp._
 import io.circe.syntax._
 import com.softwaremill.sttp.circe._
 import com.typesafe.scalalogging.LazyLogging
+import net.katsstuff.ackcord.data.EmbedField
 import org.kys.mars.models.Json.EsiName
 import org.kys.mars.marsConfig
+import org.kys.mars.models.EsiNotificationType
+import org.kys.mars.models.EsiNotificationType._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import retry.Success._
@@ -58,4 +61,52 @@ object EsiUtils extends EsiProducer with EveApiProducer with LazyLogging {
     s"$imgBaseUrl/type/${id}_64.png"
   }
 
+  def isCitadelAttackedAlert(t: EsiNotificationType): Boolean = t match {
+    case StructureUnderAttack => true
+    case StructureLostShields => true
+    case StructureLostArmor => true
+    case StructureDestroyed => true
+    case _ => false
+  }
+
+  def isPosAttackedAlert(t: EsiNotificationType): Boolean = t match {
+    case TowerAlertMsg => true
+    case _ => false
+  }
+
+  def isFuelAlert(t: EsiNotificationType): Boolean = t match {
+    case TowerResourceAlertMsg => true
+    case StructureFuelAlert => true
+    case _ => false
+  }
+
+  def isStructureDirectorAlert(t: EsiNotificationType): Boolean = t match {
+    case StructureOnline => true
+    case StructureServicesOffline => true
+    case StructuresReinforcementChanged  => true
+    case StructureWentHighPower => true
+    case StructureAnchoring => true
+    case StructureUnanchoring => true
+    case OwnershipTransferred => true
+    case _ => false
+  }
+
+  def isMiscDirectorAlert(t: EsiNotificationType): Boolean = t match {
+    case CorpAllBillMsg => true
+    case CorpAppNewMsg => true
+    case CorpNewCEOMsg => true
+    case CorpTaxChangeMsg => true
+    case CharLeftCorpMsg => true
+    case CharAppWithdrawMsg => true
+    case CharAppAcceptMsg => true
+    case _ => false
+  }
+
+  def isNotificationRelevant(t: EsiNotificationType): Boolean = {
+    isCitadelAttackedAlert(t) ||
+    isPosAttackedAlert(t) ||
+    isFuelAlert(t) ||
+    isStructureDirectorAlert(t) ||
+    isMiscDirectorAlert(t)
+  }
 }

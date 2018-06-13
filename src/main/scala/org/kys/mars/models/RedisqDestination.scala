@@ -5,7 +5,6 @@ import org.kys.mars.models.Json._
 
 /** This model represents destinations for the bot.
   * Example of this encoded in `.conf` can be found in `mars.conf.example` in field `destinations`
-  * @param `type`             Enum that represents what this destination describes [ [[[Killmail]] [[Notification]] ]
   * @param characterIds       List of Eve character ids relevant to the destination
   * @param corporationIds     List of Eve corporation ids relevant to the destination
   * @param allianceIds        List of Eve alliance ids relevant to the destination
@@ -13,13 +12,12 @@ import org.kys.mars.models.Json._
   * @param discordChannelIds  List of Discord channel ids that determines where messages should be forwarded
   * @param name               Name for the config entry. Purely used for logging purposes.
   */
-case class Destination(`type`: DestinationType,
-                       characterIds: List[Long],
-                       corporationIds: List[Long],
-                       allianceIds: List[Long],
-                       all: Boolean,
-                       discordChannelIds: List[Long],
-                       name: String) extends LazyLogging {
+case class RedisqDestination(characterIds: List[Long],
+                             corporationIds: List[Long],
+                             allianceIds: List[Long],
+                             all: Boolean,
+                             discordChannelIds: List[Long],
+                             name: String) extends LazyLogging {
   /** Helper function that determines if [[Option]] of [[Long]] is contained in a [[List]] of [[Long]]
     * @param xs   List to be searched in
     * @param id   Id to be searched in List
@@ -60,5 +58,5 @@ case class Destination(`type`: DestinationType,
   /*
    * Nice printing for logs
    */
-  override def toString: String = name
+  override def toString: String = name.replace(" ", "_")
 }

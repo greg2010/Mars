@@ -3,6 +3,7 @@ package org.kys.mars.util
 import akka.Done
 import cats.Id
 import com.typesafe.scalalogging.LazyLogging
+import net.katsstuff.ackcord.data.{ChannelId, EmbedField}
 import net.katsstuff.ackcord.data.raw.RawActivity
 import net.katsstuff.ackcord.{ClientSettings, DiscordClient}
 
@@ -13,7 +14,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 object DiscordUtils extends LazyLogging {
 
   def initClient(token: String, status: Option[String] = None): (Future[DiscordClient[Id]], Future[Done]) = {
-    val activity = status.map(RawActivity(_, 0, None, None, None, None, None, None, None))
+    val checkedStatus = status.flatMap(x => if (x == "") None else Some(x))
+    val activity = checkedStatus.map(RawActivity(_, 0, None, None, None, None, None, None, None))
     val clientSettings: ClientSettings = new ClientSettings(token = token, activity = activity)
     val client: Future[DiscordClient[Id]] = clientSettings.build()
     val loginFuture = client.flatMap(_.login())
@@ -23,4 +25,27 @@ object DiscordUtils extends LazyLogging {
   def stopClient(client: Future[DiscordClient[Id]]): Future[Boolean] = {
     client.flatMap(_.logout())
   }
+
+
+  /** A helper function that produces discord embed fields
+    *
+    * @param fieldName    Name of the field to be generated
+    * @param fieldValue   Title of the field to be generated
+    * @param inline       Specifies if the field should be inline (defaults to true)
+    * @return             Instance of [[EmbedField]] that contains field information
+    */
+  def generateField(fieldName: String, fieldValue: String, inline: Boolean = true): EmbedField = {
+    EmbedField(
+      name = fieldName,
+      value = fieldValue,
+      inline = Some(inline)
+    )
+  }
+
+  /*
+ * Default constants for friendly and hostile killmails
+ */
+  val redColor = 0x990000
+  val greenColor = 0x009900
+  val orangeColor = 0xe2ba16
 }

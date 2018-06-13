@@ -3,19 +3,20 @@ package org.kys.mars.controllers
 import java.time.OffsetDateTime
 
 import akka.NotUsed
+import akka.http.scaladsl.model.headers.LinkParams.title
 import monix.eval.Task
 import net.katsstuff.ackcord.data.{ChannelId, EmbedField, OutgoingEmbed, OutgoingEmbedFooter, OutgoingEmbedThumbnail}
 import net.katsstuff.ackcord.http.rest.{CreateMessage, CreateMessageData}
 import org.kys.mars.models.Json._
 import org.kys.mars.rx.consumers.DiscordConsumer
 import org.kys.mars.rx.producers.RedisqProducer
-import org.kys.mars.util.EsiUtils
+import org.kys.mars.util.{DiscordUtils, EsiUtils}
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.{Observable, Pipe}
 import org.kys.mars.marsConfig
 
 import scala.concurrent.duration._
-import org.kys.mars.models.{Destination, DestinationType}
+import org.kys.mars.models.RedisqDestination
 
 
 /** RedisController is a class that provides [[Task]] that does processes [[RedisqProducer]] with [[DiscordConsumer]].
@@ -26,20 +27,19 @@ import org.kys.mars.models.{Destination, DestinationType}
   */
 class RedisqController(redisqProducer: RedisqProducer,
                        discordConsumer: DiscordConsumer,
-                       destinations: List[Destination]) {
+                       destinations: List[RedisqDestination]) {
 
 
   lazy val tasks: List[Task[Unit]] = {
     val sharedObservable = redisqProducer.share
     destinations
-      .filter(_.`type` == DestinationType.Killmail)
       .map { destination =>
         sharedObservable
           .filter(destination.isRelevant)
           .mapTask(p => EsiUtils.resolveNamesTask(p.getIds).map(n => (p, n)))
           .map(p => Observable.fromIterable(transformObservable(p._1, p._2, destination)))
           .flatten
-          .bufferTimedWithPressure(1.second, 50)
+          .bufferTimedAndCounted(1.second, 50)
           .filter(_.nonEmpty)
           .consumeWith(discordConsumer)
       }
@@ -49,15 +49,10 @@ class RedisqController(redisqProducer: RedisqProducer,
     * That is, this function takes a `Zkillboard` message and produces a `Discord` message
     * @param p  RedisQ Package
     * @param n  List of resolved names for ids contained in `p`
-    * @param d  Destination for which package is being produced
+    * @param d  RedisqDestination for which package is being produced
     * @return   Discord message with [[ChannelId]] attached
     */
-  def transformObservable(p: PackageBis, n: List[EsiName], d: Destination): List[CreateMessage[NotUsed]] = {
-    /*
-     * Default constants for friendly and hostile killmails
-     */
-    val redColor = 0x990000
-    val greenColor = 0x009900
+  def transformObservable(p: PackageBis, n: List[EsiName], d: RedisqDestination): List[CreateMessage[NotUsed]] = {
 
     /** A helper function that resolves eve name by its' id
       *
@@ -136,29 +131,15 @@ class RedisqController(redisqProducer: RedisqProducer,
      * Embed to be sent in the discord message
      */
     lazy val generateEmbed: OutgoingEmbed = {
-      /** A helper function that produces discord embed fields
-        *
-        * @param fieldName    Name of the field to be generated
-        * @param fieldValue   Title of the field to be generated
-        * @param inline       Specifies if the field should be inline (defaults to true)
-        * @return             Instance of [[EmbedField]] that contains field information
-        */
-      def generateField(fieldName: String, fieldValue: String, inline: Boolean = true): EmbedField = {
-        EmbedField(
-          name = fieldName,
-          value = fieldValue,
-          inline = Some(inline)
-        )
-      }
 
-      val characterField = victim.characterId.flatMap(getNameById).map(generateField("Character", _))
-      val corporationField = victim.corporationId.flatMap(getNameById).map(generateField("Corporation", _))
-      val allianceField = victim.allianceId.flatMap(getNameById).map(generateField("Alliance", _))
-      val shipField = victim.shipTypeId.flatMap(getNameById).map(generateField("Ship", _))
-      val solarSystemField = getNameById(p.killmail.solarSystemId).map(generateField("Location", _))
-      val totalValueField = generateField("Total Value", p.zkb.totalValue.getOrElse(0D).formatted("%,.2f ISK"))
+      val characterField = victim.characterId.flatMap(getNameById).map(DiscordUtils.generateField("Character", _))
+      val corporationField = victim.corporationId.flatMap(getNameById).map(DiscordUtils.generateField("Corporation", _))
+      val allianceField = victim.allianceId.flatMap(getNameById).map(DiscordUtils.generateField("Alliance", _))
+      val shipField = victim.shipTypeId.flatMap(getNameById).map(DiscordUtils.generateField("Ship", _))
+      val solarSystemField = getNameById(p.killmail.solarSystemId).map(DiscordUtils.generateField("Location", _))
+      val totalValueField = DiscordUtils.generateField("Total Value", p.zkb.totalValue.getOrElse(0D).formatted("%,.2f ISK"))
 
-      val color = if (d.isFriendly(p)) redColor else greenColor
+      val color = if (d.isFriendly(p)) DiscordUtils.redColor else DiscordUtils.greenColor
 
       /*
        * Putting it all together

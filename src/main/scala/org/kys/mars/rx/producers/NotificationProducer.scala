@@ -7,6 +7,7 @@ import monix.reactive.Observable
 import monix.reactive.observers.Subscriber
 import io.circe.parser._
 import io.circe.generic.auto._
+import org.kys.mars.models.{NotificationDestination, RedisqDestination}
 import org.kys.mars.models.Json.Notification
 
 import scala.concurrent.duration._
@@ -18,11 +19,11 @@ import scala.concurrent.duration._
   * @param characterId
   * @param token
   */
-class NotificationProducer(override val rate: FiniteDuration)(characterId: Long, override val token: String)
+class NotificationProducer(override val rate: FiniteDuration, val destination: NotificationDestination)
   extends Observable[Notification] with EveApiProducer with EsiProducer with LazyLogging {
   private var eTag: String = ""
   def getRequest: RequestT[Id, String, Nothing] =
-    baseRequest.get(uri"$baseUrl/characters/$characterId/notifications")
+    baseRequest(destination.esiRefreshToken).get(uri"$baseUrl/characters/${destination.characterId}/notifications")
       .header("If-None-Match", eTag)
       .response(asString)
 
@@ -47,7 +48,9 @@ class NotificationProducer(override val rate: FiniteDuration)(characterId: Long,
         case Left(err) =>
           if (!rawResp.isSuccess) {
             logger.error(s"Failed to obtain data from ESI, error code=${rawResp.code} message=$err")
-          } else {
+          } else if (rawResp.code == 301) {
+            logger.debug(s"Got 301 from ESI, content not changed code=${rawResp.code}")
+           } else {
             logger.debug(s"Got non-200 from ESI, but not error code=${rawResp.code}")
           }
       }
