@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 
 import akka.NotUsed
 import akka.http.scaladsl.model.headers.LinkParams.title
+import com.typesafe.scalalogging.LazyLogging
 import monix.eval.Task
 import net.katsstuff.ackcord.data.{ChannelId, EmbedField, OutgoingEmbed, OutgoingEmbedFooter, OutgoingEmbedThumbnail}
 import net.katsstuff.ackcord.http.rest.{CreateMessage, CreateMessageData}
@@ -27,7 +28,7 @@ import org.kys.mars.models.RedisqDestination
   */
 class RedisqController(redisqProducer: RedisqProducer,
                        discordConsumer: DiscordConsumer,
-                       destinations: List[RedisqDestination]) {
+                       destinations: List[RedisqDestination]) extends LazyLogging {
 
 
   lazy val tasks: List[Task[Unit]] = {
@@ -37,12 +38,47 @@ class RedisqController(redisqProducer: RedisqProducer,
         sharedObservable
           .filter(destination.isRelevant)
           .mapTask(p => EsiUtils.resolveNamesTask(p.getIds).map(n => (p, n)))
-          .map(p => Observable.fromIterable(transformObservable(p._1, p._2, destination)))
+          .map(p => Observable.fromIterable(transformObservableDispatch(p._1, p._2, destination)))
           .flatten
           .bufferTimedAndCounted(1.second, 50)
           .filter(_.nonEmpty)
           .consumeWith(discordConsumer)
       }
+  }
+
+  /** This function provides fallback logic (if ESI is down, which is often)
+    *
+    * @param p            killmail package
+    * @param n            `Either` of List of EsiName
+    * @param destination  Instance of [[RedisqDestination]]
+    * @return             List of discord messages
+    */
+  def transformObservableDispatch(p: PackageBis,
+                                  n: Either[Throwable, List[EsiName]],
+                                  destination: RedisqDestination): List[CreateMessage[NotUsed]] = {
+    n match {
+      case Left(ex) =>
+        logger.error("Failed to resolve entity names through ESI, falling back to plaintext", ex)
+        transformObservableText(p, destination)
+      case Right(names) => transformObservable(p, names, destination)
+    }
+  }
+
+  /** A fallback function that generates message that contains link to the killmail if ESI is down
+    * and we couldn't generate a nice embed
+    * @param p            killmail package
+    * @param destination
+    * @return
+    */
+  def transformObservableText(p: PackageBis, destination: RedisqDestination): List[CreateMessage[NotUsed]] = {
+    destination.discordChannelIds.map { channelId =>
+      val data = CreateMessageData(
+        content = "Grr ESI is ded again :dagger: :dagger: :dagger:\n" +
+          "Here's link to the killmail: " +
+          s"${marsConfig.getString("eve.zkbBaseUrl")}/kill/${p.killID}"
+      )
+      CreateMessage[NotUsed](channelId = ChannelId(channelId), data)
+    }
   }
 
   /** Auxillary function that takes a RedisQ package ([[PackageBis]]) and produces a [[CreateMessage]] instance.

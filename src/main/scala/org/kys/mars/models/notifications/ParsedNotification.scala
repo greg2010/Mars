@@ -20,40 +20,45 @@ object ParsedNotification {
                                       structureID: Long,
                                       solarsystemID: Long) extends ParsedNotificationLike {
 
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
       val idsToNames = List(Some(structureTypeID), Some(solarsystemID), charID).flatten
-      EsiUtils.resolveNamesTask(idsToNames).map { n =>
-        val structureName = n.find(_.id == structureTypeID).map(_.name)
-        val systemName = n.find(_.id == solarsystemID).map(_.name)
+      EsiUtils.resolveNamesTask(idsToNames).map { nEither =>
+        nEither.map { n =>
+          val structureName = n.find(_.id == structureTypeID).map(_.name)
+          val systemName = n.find(_.id == solarsystemID).map(_.name)
 
-        val title = s"${structureName.getOrElse("Unknown")} in ${systemName.getOrElse("Unknown")} is under attack"
-        val attacker = List(charID.flatMap(i => n.find(_.id == i).map(_.name)), corpName, allianceName)
-          .flatten
-          .mkString(" | ")
-        val attackerField =
-          if(attacker != "") Some(DiscordUtils.generateField("Attacker", attacker, inline = false))
-          else None
-        val structureField = structureName.map(DiscordUtils.generateField("Type", _))
-        val systemField = systemName.map(DiscordUtils.generateField("System", _))
-        val shieldField = Some(generateDamagePercentField("Shield", shieldPercentage))
-        val armorField = Some(generateDamagePercentField("Armor", armorPercentage))
-        val hullField = Some(generateDamagePercentField("Hull", hullPercentage))
+          val title = s"${structureName.getOrElse("Unknown")} in ${systemName.getOrElse("Unknown")} is under attack"
+          val attacker = List(charID.flatMap(i => n.find(_.id == i).map(_.name)), corpName, allianceName)
+            .flatten
+            .mkString(" | ")
+          val attackerField =
+            if(attacker != "") Some(DiscordUtils.generateField("Attacker", attacker, inline = false))
+            else None
+          val structureField = structureName.map(DiscordUtils.generateField("Type", _))
+          val systemField = systemName.map(DiscordUtils.generateField("System", _))
+          val shieldField = Some(generateDamagePercentField("Shield", shieldPercentage))
+          val armorField = Some(generateDamagePercentField("Armor", armorPercentage))
+          val hullField = Some(generateDamagePercentField("Hull", hullPercentage))
 
-        val thumbnail = OutgoingEmbedThumbnail(EsiUtils.getUrlByItemId(structureTypeID))
+          val thumbnail = OutgoingEmbedThumbnail(EsiUtils.getUrlByItemId(structureTypeID))
+          val dotlanRangeUrl = systemName.map(EsiUtils.getDotlanRangeUrlBySystemName)
 
-        val fieldSeq = Seq(
-          attackerField,
-          structureField,
-          systemField,
-          shieldField,
-          armorField,
-          hullField).flatten
+          val fieldSeq = Seq(
+            attackerField,
+            structureField,
+            systemField,
+            shieldField,
+            armorField,
+            hullField).flatten
 
-        OutgoingEmbed(
-          title = Some(title),
-          thumbnail = Some(thumbnail),
-          color = Some(DiscordUtils.orangeColor),
-          fields = fieldSeq)
+          OutgoingEmbed(
+            title = Some(title),
+            thumbnail = Some(thumbnail),
+            url = dotlanRangeUrl,
+            color = Some(DiscordUtils.orangeColor),
+            fields = fieldSeq)
+
+        }
       }
     }
   }
@@ -64,8 +69,8 @@ object ParsedNotification {
                                 timeLeft: Long,
                                 timestamp: Long,
                                 vulnerableTime: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -75,8 +80,8 @@ object ParsedNotification {
                                       timeLeft: Long,
                                       timestamp: Long,
                                       vulnerableTime: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -89,8 +94,8 @@ object ParsedNotification {
                                solarSystemID: Long,
                                moonID: Long,
                                typeID: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -100,8 +105,8 @@ object ParsedNotification {
                                        solarSystemID: Long,
                                        typeID: Long,
                                        wants: List[TowerResourceAlertMsgTextWants]) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -109,8 +114,8 @@ object ParsedNotification {
                                     structureID: Long,
                                     structureTypeID: Long,
                                     listOfTypesAndQty: List[Long]) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -118,16 +123,16 @@ object ParsedNotification {
                                           structureID: Long,
                                           structureTypeID: Long,
                                           listOfServiceModulesIDs: List[Long]) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
   case class StructureWentHighPowerText(solarSystemID: Long,
                                         structureID: Long,
                                         structureTypeID: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = {
-      Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] = {
+      Task(Right(OutgoingEmbed()))
     }
   }
 
@@ -135,7 +140,8 @@ object ParsedNotification {
                                       fromCorporationName: String,
                                       toCorporationName: String,
                                       solarSystemName: String) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 
   case class CorpAllBillMsgText(amount: Double,
@@ -146,22 +152,27 @@ object ParsedNotification {
                                 dueDate: Long,
                                 externalID: Long,
                                 externalID2: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 
   case class CorpAppNewMsgText(charID: Long, corpID: Long, applicationText: String) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 
   case class CorpTaxChangeMsgText(corpID: Long, newTaxRate: Double, oldTaxRate: Double) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 
   case class CharLeftCorpMsgText(charID: Long, corpID: Long) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 
   case class CharAppAcceptMsgText(charID: Long, corpID: Long, applicationText: String) extends ParsedNotificationLike {
-    override def prettyPrintEmbed: Task[OutgoingEmbed] = Task(OutgoingEmbed())
+    override def prettyPrintEmbed(): Task[Either[Throwable, OutgoingEmbed]] =
+      Task(Right(OutgoingEmbed()))
   }
 }

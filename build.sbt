@@ -58,7 +58,8 @@ libraryDependencies ++= Seq(
   "net.katsstuff" %% "ackcord" % ackcordVersion,
   "net.katsstuff" %% "ackcord-core" % ackcordVersion,
   "net.katsstuff" %% "ackcord-commands-core" % ackcordVersion,
-  "com.softwaremill.retry" %% "retry" % "0.3.0")
+  "com.softwaremill.retry" %% "retry" % "0.3.0",
+  "com.github.etaty" %% "rediscala" % "1.8.0")
 
 addCompilerPlugin(
   "org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full

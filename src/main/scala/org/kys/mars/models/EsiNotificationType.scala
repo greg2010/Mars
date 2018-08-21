@@ -77,6 +77,8 @@ case object EsiNotificationType extends Enum[EsiNotificationType] with CirceEnum
   case object CorpAppRejectCustomMsg extends EsiNotificationType
   case object StructureItemsDelivered extends EsiNotificationType
   case object CorpAppInvitedMsg extends EsiNotificationType
+  case object StructureItemsMovedToSafety extends EsiNotificationType
+  case object JumpCloneDeletedMsg1 extends EsiNotificationType
 
   val values: immutable.IndexedSeq[EsiNotificationType] = findValues
 }

@@ -64,7 +64,7 @@ object Json {
                                            solarSystemId: Long,
                                            victim: Victim)
 
-  @ConfiguredJsonCodec case class Zkb(locationID: Long,
+  case class Zkb(locationID: Long,
                  hash: String,
                  fittedValue: Double,
                  totalValue: Option[Double],
@@ -74,9 +74,9 @@ object Json {
                  awox: Boolean,
                  href: String)
 
-  @ConfiguredJsonCodec case class R00tJsonObject(`package`: Option[PackageBis])
+  case class R00tJsonObject(`package`: Option[PackageBis])
 
-  @ConfiguredJsonCodec case class PackageBis(killID: Long, killmail: Killmail, zkb: Zkb) {
+  case class PackageBis(killID: Long, killmail: Killmail, zkb: Zkb) {
     def getIds: List[Long] = {
       val victimIds: List[Option[Long]] = List(
         killmail.victim.characterId,

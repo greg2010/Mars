@@ -6,7 +6,6 @@ import com.softwaremill.sttp._
 import io.circe.syntax._
 import com.softwaremill.sttp.circe._
 import com.typesafe.scalalogging.LazyLogging
-import net.katsstuff.ackcord.data.EmbedField
 import org.kys.mars.models.Json.EsiName
 import org.kys.mars.marsConfig
 import org.kys.mars.models.EsiNotificationType
@@ -23,7 +22,7 @@ object EsiUtils extends EsiProducer with EveApiProducer with LazyLogging {
   val token = ""
   val rate: FiniteDuration = 1.second
 
-  def resolveNamesTask(ids: List[Long]): Task[List[EsiName]] = {
+  def resolveNamesTask(ids: List[Long]): Task[Either[Throwable, List[EsiName]]] = {
     def retriableFuture: Future[Try[List[EsiName]]] = retry.Backoff().apply {
       Future {
         Try {
@@ -48,17 +47,21 @@ object EsiUtils extends EsiProducer with EveApiProducer with LazyLogging {
     }
     Task.defer {
       Task.fromFuture {
-        retriableFuture.map {
-          case Success(r) => r
-          case Failure(ex) => throw ex
+        retriableFuture.flatMap {
+          case Success(r) => Future.successful(r)
+          case Failure(ex) => Future.failed(ex)
         }
-      }
+      }.attempt
     }
   }
 
   def getUrlByItemId(id: Long): String = {
     val imgBaseUrl = marsConfig.getString("eve.imgBaseUrl")
     s"$imgBaseUrl/type/${id}_64.png"
+  }
+
+  def getDotlanRangeUrlBySystemName(name: String): String = {
+    s"${marsConfig.getString("eve.dotlanBaseUrl")}/range/Avatar,5/$name"
   }
 
   def isCitadelAttackedAlert(t: EsiNotificationType): Boolean = t match {

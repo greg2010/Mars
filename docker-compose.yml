@@ -1,4 +1,9 @@
 version: '2.2'
+
+volumes:
+  kys-redis-data:
+    name: kys-redis-data
+
 services:
   mars:
     image: greg2010/mars:master_latest
@@ -7,3 +12,9 @@ services:
     mem_limit: 256m
     environment:
       - MARS_DISCORD_TOKEN=YOURTOKEN
+  kys-redis:
+    image: redis:4-alpine
+    ports:
+      - 26379:6379/tcp
+    volumes:
+      - kys-redis-data:/data

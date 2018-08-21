@@ -16,7 +16,7 @@ import org.kys.mars.models.Json.{EsiName, Notification}
 import org.kys.mars.models.{EsiNotificationSenderType, NotificationDestination, RedisqDestination}
 import org.kys.mars.rx.consumers.DiscordConsumer
 import org.kys.mars.rx.producers.NotificationProducer
-import org.kys.mars.util.DiscordUtils
+import org.kys.mars.util.{DiscordUtils, RedisUtils}
 
 import scala.concurrent.duration._
 import org.kys.mars.util.EsiUtils._
@@ -25,18 +25,34 @@ import scala.concurrent.Future
 
 class NotificationController(notificationProducers: List[NotificationProducer],
                              discordConsumer: DiscordConsumer) extends LazyLogging {
-
   lazy val tasks: List[Task[Unit]] = notificationProducers.map { producer =>
     producer
+      // Skip irrelevant notifications to save some CPU cycles
       .filter(n => isNotificationRelevant(n.`type`))
       .filter(_.`type` == StructureUnderAttack)
-      .flatMap(p => Observable.fromIterable(transformObservable(p, producer.destination)))
+      // Generate list of tasks for notifications
+      .flatMap(n => Observable.fromIterable(mapTaskHelper(n, producer.destination)))
+      // Transform `List[Task]` back to observable
       .mapTask(identity)
+      // Filter out notifications that have already been posted (according to Redis)
+      .filter(_._2)
+      // Get actual notifications
+      .map(_._1)
       .bufferTimedAndCounted(1.second, 5)
       .filter(_.nonEmpty)
       .consumeWith(discordConsumer)
   }
 
+  private def mapTaskHelper(n: Notification,
+                            d: NotificationDestination): List[Task[(CreateMessage[NotUsed], Boolean)]] = {
+    val t = transformObservable(n, d)
+    t.map { oneTask =>
+      for {
+        msg <- oneTask
+        shouldPost <- RedisUtils.readNotificationIdAndWriteIfNeeded(msg.channelId.toLong, n.notificationId)
+      } yield (msg, shouldPost)
+    }
+  }
 
 
   def transformObservable(notification: Notification, d: NotificationDestination): List[Task[CreateMessage[NotUsed]]] = {
@@ -51,9 +67,7 @@ class NotificationController(notificationProducers: List[NotificationProducer],
     }
 
     d.discordChannelIds.map { channelId =>
-      val embed = notification.embed
-
-      embed match {
+      notification.embed match {
         case Some(e) =>
           e match {
             case Left(err) =>
@@ -61,21 +75,25 @@ class NotificationController(notificationProducers: List[NotificationProducer],
                 s"notificationType=${notification.`type`} " +
                 s"text=${notification.text} " +
                 s"error=${err.getMessage}", err)
-              generateErrorAdminMessage(d.adminDiscordChannelId).map(Task.now)
+              generateErrorAdminMessage(d.adminDiscordChannelId).map(Task.pure)
             case Right(em) =>
-              Some(em.prettyPrintEmbed.map { e =>
-                val footer = OutgoingEmbedFooter(notification.notificationId.toString)
-                val newEmbed = e.copy(
-                  footer = Some(footer),
-                  timestamp = Some(notification.timestamp.atOffset(ZoneOffset.UTC)))
-                CreateMessage[NotUsed](ChannelId(channelId), CreateMessageData(embed = Some(newEmbed)))
+              Some(em.prettyPrintEmbed().map {
+                case Right(embed) =>
+                  val footer = OutgoingEmbedFooter(notification.notificationId.toString)
+                  val newEmbed = embed.copy(
+                    footer = Some(footer),
+                    timestamp = Some(notification.timestamp.atOffset(ZoneOffset.UTC)))
+                  CreateMessage[NotUsed](ChannelId(channelId), CreateMessageData(embed = Some(newEmbed)))
+                case Left(ex) =>
+                  // Fallback logic here
+                  CreateMessage[NotUsed](ChannelId(channelId), CreateMessageData(content = "REPLACE ME"))
               })
           }
         case None =>
           logger.error(s"Failed to generate embed for a notification " +
             s"notificationType=${notification.`type`} " +
             s"text=${notification.text}")
-          generateErrorAdminMessage(d.adminDiscordChannelId).map(Task.now)
+          generateErrorAdminMessage(d.adminDiscordChannelId).map(Task.pure)
       }
     }
   }.flatten
