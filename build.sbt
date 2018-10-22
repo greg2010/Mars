@@ -38,7 +38,6 @@ val ackcordVersion = "0.10.0"
 libraryDependencies ++= Seq(
   "com.github.pureconfig" %% "pureconfig" % "0.9.1",
   "com.github.pureconfig" %% "pureconfig-enumeratum" % "0.9.1",
-  "org.rogach" %% "scallop" % "3.1.2",
   "ch.qos.logback" % "logback-classic" % "1.1.7",
   "com.github.pukkaone" % "logback-gelf" % "1.1.10",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
